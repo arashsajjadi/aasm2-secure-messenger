@@ -1,0 +1,15 @@
+{
+  "password": "CorrectHorseBatteryStaple",
+  "plaintext_utf8": "hello cross platform world",
+  "salt_hex": "00112233445566778899aabbccddeeff",
+  "nonce_hex": "0102030405060708090a0b0c",
+  "metadata": {
+    "name": "hello.txt",
+    "type": "file"
+  },
+  "iterations": 350000,
+  "header_hex": "4141534d3201010100055730100c0000002200112233445566778899aabbccddeeff0102030405060708090a0b0c7b226e616d65223a2268656c6c6f2e747874222c2274797065223a2266696c65227d",
+  "ciphertext_plus_tag_hex": "4631f16f80d8eaa14b558129aa2f6bc6ee5aac2d59f5b3ca7bf835b5542898d5b4eb51b02c863e752564",
+  "blob_hex": "4141534d3201010100055730100c0000002200112233445566778899aabbccddeeff0102030405060708090a0b0c7b226e616d65223a2268656c6c6f2e747874222c2274797065223a2266696c65227d4631f16f80d8eaa14b558129aa2f6bc6ee5aac2d59f5b3ca7bf835b5542898d5b4eb51b02c863e752564",
+  "blob_base64": "QUFTTTIBAQEABVcwEAwAAAAiABEiM0RVZneImaq7zN3u/wECAwQFBgcICQoLDHsibmFtZSI6ImhlbGxvLnR4dCIsInR5cGUiOiJmaWxlIn1GMfFvgNjqoUtVgSmqL2vG7lqsLVn1s8p7+DW1VCiY1bTrUbAshj51JWQ="
+}
