@@ -2,7 +2,7 @@
 
 AASM2 Secure Messenger is a cross platform encrypted messaging and file transfer project built around a shared **AASM2** format.
 
-**Author:** Seyed Arash Sajjadi
+**Author:** Arash Sajjadi
 
 This repository currently contains:
 
@@ -401,7 +401,7 @@ privacy should not be a luxury, and a safer internet should be normal for everyo
 
 ## Author
 
-Seyed Arash Sajjadi
+Arash Sajjadi
 
 ## License
 
