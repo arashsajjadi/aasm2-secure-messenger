@@ -2,6 +2,8 @@
 
 AASM2 Secure Messenger is a cross platform encrypted messaging and file transfer project built around a shared **AASM2** format.
 
+**Author:** Seyed Arash Sajjadi
+
 This repository currently contains:
 
 - an **Android** application
@@ -13,8 +15,8 @@ The main idea is simple:
 
 - all platforms use the same encrypted container format
 - encryption and decryption happen locally on the user's own device
-- no server is required to read your files
-- if two implementations follow the same format, they can read each other's encrypted output
+- no central server is required to read user files
+- if multiple implementations follow the same format, they can read each other's encrypted output
 
 ## Why this project exists
 
@@ -27,7 +29,7 @@ Hopefully it can also be useful to others.
 
 And yes, so far the dramatic real world payload was not classified state secrets.
 It was mostly a couple of Nowruz Haft Sin travel photos and some internet connection screenshots between two brothers.
-Still, the hope is bigger than that:
+Still, the bigger hope is more serious than that:
 the internet should be a safer place everywhere for everyone.
 
 ## Repository Structure
@@ -73,64 +75,135 @@ This compatibility is achieved by keeping these parts identical across platforms
 
 ## Cryptographic Model
 
-AASM2 uses a password based encryption model.
+AASM2 uses password based authenticated encryption.
 
 At a high level:
 
 1. the user provides a password
-2. the password is transformed into a strong cryptographic key using a key derivation function
-3. a random nonce and random salt are used
+2. the password is transformed into a cryptographic key using a key derivation function
+3. a random salt and random nonce are generated
 4. the plaintext is encrypted
-5. authentication is attached so tampering can be detected during decryption
+5. an authentication tag is produced so tampering can be detected during decryption
 
-In practical terms, the design is based on modern standard cryptographic building blocks:
+The construction is based on standard cryptographic building blocks:
 
 * **AES 256 GCM** for authenticated encryption
 * **PBKDF2 HMAC SHA 256** for password based key derivation
 * random salt for key derivation
 * random nonce for encryption
 
-## Why this design is reasonable
+## Mathematical Sketch
 
-This project is not asking users to trust a mysterious custom cipher.
+Let:
 
-Instead, it is built around widely known and heavily studied cryptographic primitives.
+* `P` be the user password
+* `S` be a random salt
+* `N` be a random nonce
+* `M` be the plaintext
+* `K` be the derived encryption key
+* `C` be the ciphertext
+* `T` be the authentication tag
 
-### 1. AES 256
+### Key derivation
+
+The key is derived as:
+
+```text
+K = PBKDF2-HMAC-SHA256(P, S, r, dkLen)
+```
+
+where:
+
+* `P` is the password
+* `S` is the random salt
+* `r` is the iteration count
+* `dkLen` is the desired key length
+
+The role of PBKDF2 is to increase the cost of brute force guessing by making each password trial more expensive.
+
+### Encryption
+
+Authenticated encryption is then performed as:
+
+```text
+(C, T) = AES-256-GCM-Encrypt(K, N, M, AAD)
+```
+
+where:
+
+* `K` is the derived key
+* `N` is the nonce
+* `M` is the plaintext
+* `AAD` is optional authenticated metadata
+* `C` is the ciphertext
+* `T` is the authentication tag
+
+Decryption succeeds only if tag verification succeeds:
+
+```text
+M = AES-256-GCM-Decrypt(K, N, C, T, AAD)
+```
+
+If authentication fails, decryption must reject the ciphertext.
+
+## Why this is considered a reasonable design
+
+This project does not rely on a homemade custom cipher.
+
+Instead, it is built around standard and widely studied primitives.
+
+### AES 256
 
 AES is one of the most widely used symmetric encryption standards in the world.
 
-The key space of AES 256 is extremely large.
-In simple terms, brute forcing the key directly is not practical.
+A 256 bit key means the brute force key space is:
 
-### 2. GCM authentication
+```text
+2^256
+```
 
-GCM is not only encryption.
-It also provides integrity and authenticity checks.
+which is astronomically large.
 
-That means if the encrypted data is modified, corrupted, or tampered with, decryption should fail instead of silently returning bad plaintext.
+### GCM authentication
 
-### 3. PBKDF2
+GCM provides both confidentiality and integrity.
 
-Passwords chosen by humans are usually much weaker than cryptographic keys.
-PBKDF2 helps convert a human password into a stronger derived key and slows down brute force attempts by making each password guess more expensive.
+That means a modified ciphertext should not silently decrypt to plausible garbage.
+Instead, authentication should fail.
 
-### 4. Random salt and nonce
+### PBKDF2
 
-Salt prevents identical passwords from always generating identical derived keys across different encrypted items.
-Nonce randomness helps ensure that encrypting the same content twice does not produce the same ciphertext.
+Human passwords are not uniformly random.
+PBKDF2 does not magically make weak passwords perfect, but it increases the work required for offline guessing.
 
-## A small note on mathematics
+If a single password trial costs `W`, then testing `q` guesses costs roughly:
 
-The mathematical intuition is:
+```text
+q × W
+```
 
-* encryption security depends on the secrecy and effective unpredictability of the derived key
-* PBKDF2 increases the cost of password guessing
-* AES transforms plaintext blocks into ciphertext under the derived key
-* GCM adds authentication so that modified ciphertext is rejected
+Increasing the iteration count increases `W`, which slows brute force attacks.
 
-This does **not** mean users should trust any tool blindly.
-It means the construction is based on standard cryptographic assumptions instead of inventing an ad hoc homemade cipher.
+### Salt and nonce separation
+
+A random salt prevents identical passwords from deriving identical keys across different encrypted items.
+
+A random nonce prevents the same plaintext encrypted under the same key from always producing the same ciphertext.
+
+## Security interpretation
+
+A more careful statement is:
+
+* if AES-GCM remains secure as assumed
+* if HMAC-SHA256 remains secure as assumed
+* if PBKDF2 is used correctly
+* if nonces are not reused incorrectly
+* if users choose sufficiently strong passwords
+* if the device itself is not compromised
+
+then the construction is aligned with standard modern cryptographic practice.
+
+This is **not** the same as saying the whole application is formally proven secure in every real world condition.
 
 ## Why the three versions work together
 
@@ -153,26 +226,24 @@ That means:
 
 * encryption happens on your device
 * decryption happens on your device
-* your plaintext files are not sent to a central server by the tool itself
+* plaintext files are not sent to a central server by the tool itself
 * the tool does not need to inspect your private content remotely
 
 In other words, the intended usage model is local processing on your own phone or computer.
 
-Of course, if a user later sends the encrypted output through some third party messenger, email service, cloud drive, or social platform, then transport and metadata are outside the scope of this repository.
+If a user later sends the encrypted output through a third party messenger, email service, or cloud storage platform, then transport and metadata are outside the scope of this repository.
 But the encryption and decryption themselves are meant to happen locally.
 
-## What users should still understand
+## Practical limitations
 
 No security tool should promise magic.
-
-This project can be useful, but users should still choose strong passwords and use common sense.
 
 Important points:
 
 * weak passwords are still weak passwords
 * local malware can compromise any local application
 * screen capture, clipboard leaks, and infected devices are outside the protection of encryption alone
-* unaudited software should be used with healthy caution
+* unaudited software should still be used with healthy caution
 
 So the right claim is:
 this project is designed around standard, sensible cryptographic components and local processing, not that it is beyond all possible failure.
@@ -228,11 +299,6 @@ If you are a normal user, you should generally download files from **Releases**,
 
 Download the Android APK from the Releases page.
 
-Typical filename:
-
-* `AASM2-Android-debug.apk`
-* later possibly a signed release APK
-
 Then:
 
 1. transfer the APK to your Android phone if needed
@@ -245,16 +311,6 @@ Then:
 
 Download the Linux archive from the Releases page.
 
-Typical filename:
-
-* `AASM2-Linux-x86_64.tar.gz`
-
-Then:
-
-1. extract it
-2. open the extracted folder
-3. run the desktop executable
-
 Typical example:
 
 ```bash
@@ -266,11 +322,6 @@ cd AASM2-Desktop
 ### Windows
 
 Download the Windows release asset from the Releases page.
-
-Typical filename:
-
-* `AASM2-Windows-x64.zip`
-* or `AASM2-Windows-x64.exe`
 
 Then:
 
@@ -348,6 +399,11 @@ Mostly two travel photos of the Haft Sin table and some internet connection scre
 Still, the bigger hope is serious:
 privacy should not be a luxury, and a safer internet should be normal for everyone everywhere.
 
+## Author
+
+Seyed Arash Sajjadi
+
 ## License
 
-License not added yet.
+This project is released under the MIT License.
+See the `LICENSE` file for details.
