@@ -12,10 +12,6 @@ build/
 dist/
 *.spec
 
-# Qt / logs
-*.log
-*.core
-
 # Android / Gradle
 .gradle/
 local.properties
@@ -23,11 +19,13 @@ local.properties
 *.apk
 *.aab
 
-# OS / editors
-.DS_Store
-Thumbs.db
+# IDE / OS
 .idea/
 .vscode/
+.DS_Store
+Thumbs.db
+*.swp
 
 # Misc
-*.swp
+*.log
+*.core
