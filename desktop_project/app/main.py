@@ -24,7 +24,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .crypto_core import Aasm2Error, decrypt_bytes, decrypt_text_from_base64, encrypt_bytes, encrypt_text_to_base64
+try:
+    from app.crypto_core import Aasm2Error, decrypt_bytes, decrypt_text_from_base64, encrypt_bytes, encrypt_text_to_base64
+except ImportError:
+    from app.crypto_core import Aasm2Error, decrypt_bytes, decrypt_text_from_base64, encrypt_bytes, encrypt_text_to_base64
 
 APP_TITLE = "AASM2 Secure Messenger"
 
